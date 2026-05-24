@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zine排版生成器 · 简约杂志风</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f0ede8;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            padding: 24px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app {
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            font-weight: 400;
+            letter-spacing: 2px;
+            color: #3a3528;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            font-size: 0.8rem;
+            color: #8a7f6e;
+        }
+
+        .privacy {
+            display: inline-block;
+            background: #e0dbd1;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            margin-top: 8px;
+            color: #5a4e3a;
+        }
+
+        .input-area {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .input-area label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #5a4e3a;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 14px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #ddd6ca;
+            border-radius: 12px;
+            resize: vertical;
+            line-height: 1.5;
+            background: #fefcf8;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #b8a88a;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .style-select {
+            display: flex;
+            gap: 10px;
+        }
+
+        .style-btn {
+            padding: 6px 18px;
+            font-size: 0.8rem;
+            background: #f0ede8;
+            border: 1px solid #ddd0be;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+
+        .style-btn.active {
+            background: #3a3528;
+            color: white;
+            border-color: #3a3528;
+        }
+
+        .btn {
+            padding: 8px 24px;
+            font-size: 0.85rem;
+            background: #b8a88a;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            background: #9a8a6a;
+        }
+
+        .btn-download {
+            background: #5a6b4a;
+        }
+
+        .btn-download:hover {
+            background: #3e4f2e;
+        }
+
+        .preview-header {
+            margin: 20px 0 12px 0;
+            font-size: 0.75rem;
+            color: #8a7f6e;
+            border-bottom: 1px solid #ddd6ca;
+            padding-bottom: 6px;
+        }
+
+        .pages-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .page-card {
+            background: white;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .page-card canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            cursor: pointer;
+        }
+
+        .page-actions {
+            padding: 12px;
+            background: #faf8f4;
+            text-align: center;
+            border-top: 1px solid #eee6dc;
+        }
+
+        .small-btn {
+            padding: 5px 16px;
+            font-size: 0.7rem;
+            background: #e0dbd1;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            background: #faf8f4;
+            border-radius: 16px;
+            color: #b0a088;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 32px;
+            font-size: 0.65rem;
+            color: #b0a088;
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 16px; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .style-select { justify-content: center; }
+            .btn { text-align: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <h1>ZINE · 杂志排版</h1>
+        <p>文字变图片 · 宋体 · 简约干净</p>
+        <div class="privacy">🔒 本地渲染 · 不上传 · 断网可用</div>
+    </div>
+
+    <div class="input-area">
+        <label>📝 粘贴你的文字（小说 / 同人文）</label>
+        <textarea id="textInput" placeholder="把文字粘贴在这里...&#10;&#10;支持换行，自动分页，每页生成一张图片。"></textarea>
+        <div class="toolbar">
+            <div class="style-select">
+                <button class="style-btn active" data-style="clean">📄 简约杂志</button>
+                <button class="style-btn" data-style="classic">📖 经典宋体</button>
+            </div>
+            <div>
+                <button class="btn" id="generateBtn">✨ 生成排版</button>
+                <button class="btn btn-download" id="downloadAllBtn">📸 下载全部图片</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="preview-header">📷 排版预览 · 点击图片可看原图</div>
+    <div id="pagesContainer" class="pages-container">
+        <div class="empty-state">✨ 粘贴文字，点击「生成排版」</div>
+    </div>
+    <div class="footer">纯本地运行 · 宋体渲染最清晰 · 图片适合发社交媒体/存档</div>
+</div>
+
+<script>
+    const BASE_WIDTH = 500;
+    const BASE_HEIGHT = 700;
+    const dpr = window.devicePixelRatio || 2;
+    const scale = Math.min(dpr, 2.5);
+    const CANVAS_WIDTH = BASE_WIDTH * scale;
+    const CANVAS_HEIGHT = BASE_HEIGHT * scale;
+    const TOP_MARGIN = 48 * scale;
+    const BOTTOM_MARGIN = 44 * scale;
+    const LEFT_MARGIN = 38 * scale;
+    const RIGHT_MARGIN = 38 * scale;
+    const CONTENT_WIDTH = CANVAS_WIDTH - LEFT_MARGIN - RIGHT_MARGIN;
+    const LINE_HEIGHT = 26 * scale;
+    const PARAGRAPH_MARGIN = 8 * scale;
+    const FONT_FAMILY = 'SimSun, "宋体", "Times New Roman", serif';
+    const FONT_SIZE = 13 * scale;
+    
+    let currentStyle = 'clean';
+    let currentCanvases = [];
+    
+    const textarea = document.getElementById('textInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    const pagesContainer = document.getElementById('pagesContainer');
+    const styleBtns = document.querySelectorAll('.style-btn');
+    
+    styleBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            styleBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentStyle = btn.dataset.style;
+            if (textarea.value.trim()) renderPages();
+        });
+    });
+    
+    function measureTextHeight(ctx, text, maxWidth) {
+        const chars = text.split('');
+        let line = '';
+        let lines = 0;
+        for (let i = 0; i < chars.length; i++) {
+            const testLine = line + chars[i];
+            const metrics = ctx.measureText(testLine);
+            if (metrics.width > maxWidth && line.length > 0) {
+                lines++;
+                line = chars[i];
+            } else {
+                line = testLine;
+            }
+        }
+        if (line.length > 0) lines++;
+        return lines * LINE_HEIGHT;
+    }
+    
+    function drawParagraph(ctx, text, x, y, maxWidth) {
+        const chars = text.split('');
+        let line = '';
+        let currentY = y;
+        for (let i = 0; i < chars.length; i++) {
+            const testLine = line + chars[i];
+            const metrics = ctx.measureText(testLine);
+            if (metrics.width > maxWidth && line.length > 0) {
+                ctx.fillText(line, x, currentY);
+                currentY += LINE_HEIGHT;
+                line = chars[i];
+            } else {
+                line = testLine;
+            }
+        }
+        if (line.length > 0) {
+            ctx.fillText(line, x, currentY);
+            currentY += LINE_HEIGHT;
+        }
+        return currentY;
+    }
+    
+    function splitIntoPages(paragraphs, ctx) {
+        const pages = [];
+        let remaining = [...paragraphs];
+        const maxHeight = CANVAS_HEIGHT - TOP_MARGIN - BOTTOM_MARGIN;
+        while (remaining.length > 0) {
+            const pageParas = [];
+            let currentY = 0;
+            let tempIndex = 0;
+            while (tempIndex < remaining.length) {
+                const para = remaining[tempIndex];
+                if (!para.trim()) { tempIndex++; continue; }
+                const paraHeight = measureTextHeight(ctx, para, CONTENT_WIDTH);
+                if (currentY + paraHeight > maxHeight) break;
+                pageParas.push(para);
+                currentY += paraHeight + PARAGRAPH_MARGIN;
+                tempIndex++;
+            }
+            if (pageParas.length === 0 && remaining.length > 0) {
+                pageParas.push(remaining[0]);
+                remaining = remaining.slice(1);
+            } else {
+                remaining = remaining.slice(pageParas.length);
+            }
+            if (pageParas.length > 0) pages.push(pageParas);
+        }
+        if (pages.length === 0) pages.push(['']);
+        return pages;
+    }
+    
+    function drawPage(ctx, paragraphs, pageNum, totalPages) {
+        const isClean = currentStyle === 'clean';
+        const bgColor = isClean ? '#fefaf5' : '#fffef7';
+        const textColor = '#2c2a26';
+        const accentColor = '#b8a88a';
+        
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        
+        ctx.strokeStyle = '#e0d8cc';
+        ctx.lineWidth = 0.5 * scale;
+        ctx.beginPath();
+        ctx.moveTo(LEFT_MARGIN, TOP_MARGIN - 12 * scale);
+        ctx.lineTo(CANVAS_WIDTH - RIGHT_MARGIN, TOP_MARGIN - 12 * scale);
+        ctx.stroke();
+        
+        ctx.font = `${FONT_SIZE}px ${FONT_FAMILY}`;
+        ctx.fillStyle = textColor;
+        ctx.textAlign = 'left';
+        
+        let currentY = TOP_MARGIN;
+        
+        for (let i = 0; i < paragraphs.length; i++) {
+            const para = paragraphs[i];
+            if (!para.trim()) continue;
+            
+            if (isClean && i === 0 && paragraphs.length > 0) {
+                const firstChar = para.charAt(0);
+                const restText = para.slice(1);
+                ctx.save();
+                ctx.font = `${44 * scale}px ${FONT_FAMILY}`;
+                ctx.fillStyle = accentColor;
+                ctx.fillText(firstChar, LEFT_MARGIN, currentY + 30 * scale);
+                ctx.restore();
+                ctx.font = `${FONT_SIZE}px ${FONT_FAMILY}`;
+                ctx.fillStyle = textColor;
+                let restX = LEFT_MARGIN + 32 * scale;
+                let restY = currentY;
+                let restWidth = CONTENT_WIDTH - 32 * scale;
+                const chars = restText.split('');
+                let line = '';
+                for (let j = 0; j < chars.length; j++) {
+                    const testLine = line + chars[j];
+                    const metrics = ctx.measureText(testLine);
+                    if (metrics.width > restWidth && line.length > 0) {
+                        ctx.fillText(line, restX, restY);
+                        restY += LINE_HEIGHT;
+                        line = chars[j];
+                    } else {
+                        line = testLine;
+                    }
+                }
+                if (line.length > 0) ctx.fillText(line, restX, restY);
+                currentY = restY + LINE_HEIGHT;
+            } else {
+                currentY = drawParagraph(ctx, para, LEFT_MARGIN, currentY, CONTENT_WIDTH);
+            }
+            currentY += PARAGRAPH_MARGIN;
+        }
+        
+        ctx.font = `${10 * scale}px "Times New Roman", serif`;
+        ctx.fillStyle = '#c0b8a8';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${pageNum}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT - BOTTOM_MARGIN + 18 * scale);
+    }
+    
+    async function renderPages() {
+        const rawText = textarea.value.trim();
+        if (!rawText) {
+            pagesContainer.innerHTML = '<div class="empty-state">📭 请粘贴文字</div>';
+            currentCanvases = [];
+            return;
+        }
+        let paragraphs = rawText.split(/\r?\n/).filter(p => p.trim() !== '');
+        if (paragraphs.length === 0) {
+            pagesContainer.innerHTML = '<div class="empty-state">⚠️ 没有有效文字</div>';
+            return;
+        }
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.font = `${FONT_SIZE}px ${FONT_FAMILY}`;
+        const pages = splitIntoPages(paragraphs, tempCtx);
+        pagesContainer.innerHTML = '';
+        currentCanvases = [];
+        for (let i = 0; i < pages.length; i++) {
+            const canvas = document.createElement('canvas');
+            canvas.width = CANVAS_WIDTH;
+            canvas.height = CANVAS_HEIGHT;
+            canvas.style.width = `${BASE_WIDTH}px`;
+            canvas.style.height = 'auto';
+            const ctx = canvas.getContext('2d');
+            drawPage(ctx, pages[i], i + 1, pages.length);
+            canvas.style.cursor = 'pointer';
+            canvas.addEventListener('click', (function(idx) {
+                return function() {
+                    const win = window.open();
+                    win.document.write(`
+                        <html>
+                        <head><title>第${idx+1}页</title>
+                        <style>body{margin:0;background:#1a1814;display:flex;justify-content:center;align-items:center;min-height:100vh;} img{max-width:95vw;max-height:95vh;box-shadow:0 4px 20px rgba(0,0,0,0.3);}</style>
+                        </head>
+                        <body><img src="${currentCanvases[idx].toDataURL()}" /></body>
+                        </html>
+                    `);
+                };
+            })(i));
+            const card = document.createElement('div');
+            card.className = 'page-card';
+            card.appendChild(canvas);
+            const actions = document.createElement('div');
+            actions.className = 'page-actions';
+            const downloadBtn = document.createElement('button');
+            downloadBtn.className = 'small-btn';
+            downloadBtn.textContent = `⬇️ 下载第 ${i+1} 页`;
+            downloadBtn.onclick = (function(idx) {
+                return () => downloadPage(idx);
+            })(i);
+            actions.appendChild(downloadBtn);
+            card.appendChild(actions);
+            pagesContainer.appendChild(card);
+            currentCanvases.push(canvas);
+        }
+        if (pages.length > 0) window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    function downloadPage(index) {
+        const canvas = currentCanvases[index];
+        if (!canvas) return;
+        const link = document.createElement('a');
+        link.download = `zine-${index+1}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+    
+    async function downloadAll() {
+        if (currentCanvases.length === 0) { alert('请先生成排版'); return; }
+        alert(`开始下载 ${currentCanvases.length} 张图片`);
+        for (let i = 0; i < currentCanvases.length; i++) {
+            downloadPage(i);
+            await new Promise(r => setTimeout(r, 300));
+        }
+        alert('下载完成');
+    }
+    
+    generateBtn.addEventListener('click', renderPages);
+    downloadAllBtn.addEventListener('click', downloadAll);
+    
+    textarea.value = `那年初春，庭院里的海棠开得惊心动魄。\n\n他站在花树下，说，等我回来。\n\n我没有问归期，只是把那朵海棠夹进信笺里。后来战火纷飞，书信渐无。有人告诉我，他去了很远的地方，或许不会再回来。\n\n多年以后，海棠依旧开满枝头。\n\n我收到一封没有署名的信，里面只有一朵干枯的海棠。花瓣薄得像时光，脉络清晰如誓言。\n\n那一瞬间，满树繁花都失了颜色。原来有些等待，不需要归期。\n\n只是风知道，你从未忘记。`;
+    
+    renderPages();
+</script>
+</body>
+</html>
